@@ -45,13 +45,17 @@ using std::placeholders::_1;
 using std_msgs::msg::Float64;
 
 AckermannToVesc::AckermannToVesc(const rclcpp::NodeOptions & options)
-: Node("ackermann_to_vesc_node", options)
+: Node("ackermann_to_vesc_node", options),
+  speed_to_erpm_gain_(4614.0),
+  speed_to_erpm_offset_(0),
+  steering_to_servo_gain_(-1.2135),
+  steering_to_servo_offset_(0.5304)
 {
   // get conversion parameters
-  speed_to_erpm_gain_ = declare_parameter("speed_to_erpm_gain").get<double>();
-  speed_to_erpm_offset_ = declare_parameter("speed_to_erpm_offset").get<double>();
-  steering_to_servo_gain_ = declare_parameter("steering_angle_to_servo_gain").get<double>();
-  steering_to_servo_offset_ = declare_parameter("steering_angle_to_servo_offset").get<double>();
+  speed_to_erpm_gain_ = declare_parameter("speed_to_erpm_gain", speed_to_erpm_gain_);
+  speed_to_erpm_offset_ = declare_parameter("speed_to_erpm_offset", speed_to_erpm_offset_);
+  steering_to_servo_gain_ = declare_parameter("steering_angle_to_servo_gain", steering_to_servo_gain_);
+  steering_to_servo_offset_ = declare_parameter("steering_angle_to_servo_offset", steering_to_servo_offset_);
 
   // create publishers to vesc electric-RPM (speed) and servo commands
   erpm_pub_ = create_publisher<Float64>("commands/motor/speed", 10);

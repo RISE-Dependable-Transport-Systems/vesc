@@ -15,6 +15,8 @@ ament_auto_find_build_dependencies()
 
 find_package(Threads)
 
+find_package(serial_driver REQUIRED)
+
 ###########
 ## Build ##
 ###########
