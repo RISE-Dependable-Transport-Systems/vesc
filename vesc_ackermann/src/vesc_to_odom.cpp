@@ -73,6 +73,7 @@ VescToOdom::VescToOdom(const rclcpp::NodeOptions & options)
 
   // create odom publisher
   odom_pub_ = create_publisher<Odometry>("odom", 10);
+  battery_voltage_pub_ = create_publisher<Float64>("battery_voltage", 10);
 
   // create tf broadcaster
   if (publish_tf_) {
@@ -157,6 +158,8 @@ void VescToOdom::vescStateCallback(const VescStateStamped::SharedPtr state)
 
   // Velocity uncertainty
   /** @todo Think about velocity uncertainty */
+  Float64 battery_voltage;
+  battery_voltage.data = state->state.voltage_input;
 
   if (publish_tf_) {
     TransformStamped tf;
@@ -175,6 +178,7 @@ void VescToOdom::vescStateCallback(const VescStateStamped::SharedPtr state)
 
   if (rclcpp::ok()) {
     odom_pub_->publish(odom);
+    battery_voltage_pub_->publish(battery_voltage);
   }
 }
 

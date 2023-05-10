@@ -71,6 +71,7 @@ private:
 
   // ROS services
   rclcpp::Publisher<Odometry>::SharedPtr odom_pub_;
+  rclcpp::Publisher<Float64>::SharedPtr battery_voltage_pub_;
   rclcpp::Subscription<VescStateStamped>::SharedPtr vesc_state_sub_;
   rclcpp::Subscription<Float64>::SharedPtr servo_sub_;
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
