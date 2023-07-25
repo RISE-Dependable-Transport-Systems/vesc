@@ -53,7 +53,8 @@ VescToOdom::VescToOdom(const rclcpp::NodeOptions & options)
   publish_tf_(false),
   x_(0.0),
   y_(0.0),
-  yaw_(0.0)
+  yaw_(0.0),
+  current_angular_velocity_(0.0)
 {
   // get ROS parameters
   odom_frame_ = declare_parameter("odom_frame", odom_frame_);
@@ -87,7 +88,10 @@ VescToOdom::VescToOdom(const rclcpp::NodeOptions & options)
   if (use_servo_cmd_) {
     servo_sub_ = create_subscription<Float64>(
       "sensors/servo_position_command", 10, std::bind(&VescToOdom::servoCmdCallback, this, _1));
-  }
+  } else {
+    ekf_filter_sub_ = create_subscription<Odometry>(
+      "ekf_odom", 10, std::bind(&VescToOdom::ekfFitlerCallback, this, _1));
+  }  
 }
 
 void VescToOdom::vescStateCallback(const VescStateStamped::SharedPtr state)
@@ -99,7 +103,7 @@ void VescToOdom::vescStateCallback(const VescStateStamped::SharedPtr state)
 
   // convert to engineering units
   double current_speed = -(-state->state.speed - speed_to_erpm_offset_) / speed_to_erpm_gain_;
-  if (std::fabs(current_speed) < 0.05) {
+  if (std::fabs(current_speed) < 0.001) {
     current_speed = 0.0;
   }
   double current_steering_angle(0.0), current_angular_velocity(0.0);
@@ -107,6 +111,8 @@ void VescToOdom::vescStateCallback(const VescStateStamped::SharedPtr state)
     current_steering_angle =
       (last_servo_cmd_->data - steering_to_servo_offset_) / steering_to_servo_gain_;
     current_angular_velocity = current_speed * tan(current_steering_angle) / wheelbase_;
+  } else {
+    current_angular_velocity = current_angular_velocity_;
   }
 
   // use current state as last state if this is our first time here
@@ -147,13 +153,14 @@ void VescToOdom::vescStateCallback(const VescStateStamped::SharedPtr state)
 
   // Position uncertainty
   /** @todo Think about position uncertainty, perhaps get from parameters? */
-  odom.pose.covariance[0] = 0.2;   ///< x
-  odom.pose.covariance[7] = 0.2;   ///< y
-  odom.pose.covariance[35] = 0.4;  ///< yaw
+  // odom.pose.covariance[0] = 0.2;   ///< x
+  // odom.pose.covariance[7] = 0.2;   ///< y
+  // odom.pose.covariance[35] = 0.4;  ///< yaw
+  odom.pose.covariance = pose_covariance_;
 
   // Velocity ("in the coordinate frame given by the child_frame_id")
-  odom.twist.twist.linear.x = current_speed;
-  odom.twist.twist.linear.y = 0.0;
+  odom.twist.twist.linear.x = x_dot;
+  odom.twist.twist.linear.y = y_dot;
   odom.twist.twist.angular.z = current_angular_velocity;
 
   // Velocity uncertainty
@@ -185,6 +192,13 @@ void VescToOdom::vescStateCallback(const VescStateStamped::SharedPtr state)
 void VescToOdom::servoCmdCallback(const Float64::SharedPtr servo)
 {
   last_servo_cmd_ = servo;
+}
+
+void VescToOdom::ekfFitlerCallback(const Odometry::SharedPtr ekf_odom)
+{
+  yaw_ = tf2::getYaw(ekf_odom->pose.pose.orientation);
+  current_angular_velocity_ = ekf_odom->twist.twist.angular.z;
+  pose_covariance_ = ekf_odom->pose.covariance;
 }
 
 }  // namespace vesc_ackermann

@@ -36,9 +36,11 @@
 #include <std_msgs/msg/float64.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <vesc_msgs/msg/vesc_state_stamped.hpp>
+#include "tf2/utils.h"
 
 #include <memory>
 #include <string>
+#include <array>
 
 namespace vesc_ackermann
 {
@@ -63,9 +65,10 @@ private:
   double steering_to_servo_gain_, steering_to_servo_offset_;
   double wheelbase_;
   bool publish_tf_;
+  std::array<double, 36> pose_covariance_;
 
   // odometry state
-  double x_, y_, yaw_;
+  double x_, y_, yaw_, current_angular_velocity_;
   Float64::SharedPtr last_servo_cmd_;  ///< Last servo position commanded value
   VescStateStamped::SharedPtr last_state_;  ///< Last received state message
 
@@ -74,11 +77,13 @@ private:
   rclcpp::Publisher<Float64>::SharedPtr battery_voltage_pub_;
   rclcpp::Subscription<VescStateStamped>::SharedPtr vesc_state_sub_;
   rclcpp::Subscription<Float64>::SharedPtr servo_sub_;
+  rclcpp::Subscription<Odometry>::SharedPtr ekf_filter_sub_;
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_pub_;
 
   // ROS callbacks
   void vescStateCallback(const VescStateStamped::SharedPtr state);
   void servoCmdCallback(const Float64::SharedPtr servo);
+  void ekfFitlerCallback(const Odometry::SharedPtr ekf_odom);
 };
 
 }  // namespace vesc_ackermann
