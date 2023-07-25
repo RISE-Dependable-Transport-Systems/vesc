@@ -40,6 +40,9 @@
 #include <sstream>
 #include <string>
 
+#define DEG2RAD(x) ((x)*M_PI*1./180)
+#define G2MpS(x) ((x)*9.8)
+
 namespace vesc_driver
 {
 
@@ -209,18 +212,19 @@ void VescDriver::vescPacketCallback(const std::shared_ptr<VescPacket const> & pa
     auto std_imu_msg = Imu();
     imu_msg.header.stamp = now();
     std_imu_msg.header.stamp = now();
+    std_imu_msg.header.frame_id = "imu_link";
 
-    imu_msg.imu.ypr.x = imuData->roll();
-    imu_msg.imu.ypr.y = imuData->pitch();
-    imu_msg.imu.ypr.z = imuData->yaw();
+    imu_msg.imu.ypr.x = DEG2RAD(imuData->roll());
+    imu_msg.imu.ypr.y = DEG2RAD(imuData->pitch());
+    imu_msg.imu.ypr.z = DEG2RAD(imuData->yaw());
 
-    imu_msg.imu.linear_acceleration.x = imuData->acc_x();
-    imu_msg.imu.linear_acceleration.y = imuData->acc_y();
-    imu_msg.imu.linear_acceleration.z = imuData->acc_z();
+    imu_msg.imu.linear_acceleration.x = G2MpS(imuData->acc_x());
+    imu_msg.imu.linear_acceleration.y = G2MpS(imuData->acc_y());
+    imu_msg.imu.linear_acceleration.z = G2MpS(imuData->acc_z());
 
-    imu_msg.imu.angular_velocity.x = imuData->gyr_x();
-    imu_msg.imu.angular_velocity.y = imuData->gyr_y();
-    imu_msg.imu.angular_velocity.z = imuData->gyr_z();
+    imu_msg.imu.angular_velocity.x = DEG2RAD(imuData->gyr_x());
+    imu_msg.imu.angular_velocity.y = DEG2RAD(imuData->gyr_y());
+    imu_msg.imu.angular_velocity.z = DEG2RAD(imuData->gyr_z());
 
     imu_msg.imu.compass.x = imuData->mag_x();
     imu_msg.imu.compass.y = imuData->mag_y();
@@ -231,18 +235,18 @@ void VescDriver::vescPacketCallback(const std::shared_ptr<VescPacket const> & pa
     imu_msg.imu.orientation.y = imuData->q_y();
     imu_msg.imu.orientation.z = imuData->q_z();
 
-    std_imu_msg.linear_acceleration.x = imuData->acc_x();
-    std_imu_msg.linear_acceleration.y = imuData->acc_y();
-    std_imu_msg.linear_acceleration.z = imuData->acc_z();
+    std_imu_msg.linear_acceleration.x = imu_msg.imu.linear_acceleration.x;
+    std_imu_msg.linear_acceleration.y = imu_msg.imu.linear_acceleration.y;
+    std_imu_msg.linear_acceleration.z = imu_msg.imu.linear_acceleration.z;
 
-    std_imu_msg.angular_velocity.x = imuData->gyr_x();
-    std_imu_msg.angular_velocity.y = imuData->gyr_y();
-    std_imu_msg.angular_velocity.z = imuData->gyr_z();
+    std_imu_msg.angular_velocity.x = imu_msg.imu.angular_velocity.x;
+    std_imu_msg.angular_velocity.y = imu_msg.imu.angular_velocity.y;
+    std_imu_msg.angular_velocity.z = imu_msg.imu.angular_velocity.z;
 
-    std_imu_msg.orientation.w = imuData->q_w();
-    std_imu_msg.orientation.x = imuData->q_x();
-    std_imu_msg.orientation.y = imuData->q_y();
-    std_imu_msg.orientation.z = imuData->q_z();
+    std_imu_msg.orientation.w = imu_msg.imu.orientation.w;
+    std_imu_msg.orientation.x = imu_msg.imu.orientation.x;
+    std_imu_msg.orientation.y = imu_msg.imu.orientation.y;
+    std_imu_msg.orientation.z = imu_msg.imu.orientation.z;
 
 
     imu_pub_->publish(imu_msg);
